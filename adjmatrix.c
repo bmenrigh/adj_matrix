@@ -17,6 +17,7 @@ int add_edge(int32_t, int32_t);
 int add_peer(int32_t, int32_t (*)[], int);
 void row_bfs(int32_t, int *);
 
+
 int main(void) {
   int maxd;
 
@@ -27,8 +28,10 @@ int main(void) {
     }
   }
 
+  /* suck the edges into memory from stdin */
   read_edges();
 
+  /* fill out each row of the matrix one at a time */
   maxd = 0;
   for (int i = 0; i < NODES; i++) {
     row_bfs(i, &maxd);
@@ -48,11 +51,13 @@ void row_bfs(int32_t row, int *maxd) {
 
   dist_r[row] = 0; /* this node is adjacent to itself (distance 0) */
 
+  /* init the row and the current list */
   for (int i = 0; i < NODES; i++) {
     dist_r[i] = -1;
     cl[i] = -1;
   }
 
+  /* init the current with this row's direct peers */
   for (int i = 0; i < MAXPEERS; i++) {
     cl[i] = edges[row][i];
   }
@@ -75,6 +80,7 @@ void row_bfs(int32_t row, int *maxd) {
       n = cl[i];
 
       if (n != -1) {
+	/* we're at depth d so this node is reachable at depth d */
 	dist_r[n] = d;
       }
       else {
@@ -90,6 +96,7 @@ void row_bfs(int32_t row, int *maxd) {
 	break;
       }
 
+      /* follow the edges from this current node to the next nodes */
       for (int j = 0; j < MAXPEERS; j++) {
 	nn = edges[n][j];
 
@@ -97,14 +104,14 @@ void row_bfs(int32_t row, int *maxd) {
 	  break;
 	}
 
+	/* this is a node reachable next depth */
 	if (dist_r[nn] == -1) {
-	  /* add_peer(nn, &nl, NODES); */
 	  nl[nn] = nn;
 	}
       }
     }
 
-    /*memcpy(cl, nl, sizeof(nl));*/
+    /* this depth is done, we need to copy the next list to the current list */
     clptr = 0;
     for (int i = 0; i < NODES; i++) {
       nn = nl[i];
@@ -120,7 +127,8 @@ void row_bfs(int32_t row, int *maxd) {
       cl[clptr] = -1;
     }
 
-    d++;
+    d++; /* we need to go deeper! */
+
   } /* end while the current list isn't empty */
 
 }
