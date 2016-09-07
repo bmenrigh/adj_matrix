@@ -11,9 +11,11 @@
 
 int32_t edges[NODES][MAXPEERS];
 
+
 void read_edges();
 int add_edge(int32_t, int32_t);
-
+int add_peer(int32_t, int32_t (*)[], int);
+void row_bfs(int32_t);
 
 int main(void) {
 
@@ -25,8 +27,78 @@ int main(void) {
   }
 
   read_edges();
+  for (int i = 0; i < NODES; i++) {
+    row_bfs(i);
+  }
 
   return 0;
+}
+
+
+void row_bfs(int32_t row) {
+  int d = 1; /* depth */
+  int n; /* working node */
+  int nn; /* new node */
+  int8_t dist_r[NODES]; /* the row of distances */
+  int32_t cl[NODES], nl[NODES]; /* TODO: make a fast datastructure */
+
+  dist_r[row] = 0; /* this node is adjacent to itself (distance 0) */
+
+  for (int i = 0; i < NODES; i++) {
+    dist_r[i] = -1;
+    cl[i] = -1;
+  }
+
+  for (int i = 0; i < MAXPEERS; i++) {
+    cl[i] = edges[row][i];
+  }
+
+  while (cl[0] != -1) { /* until there is nothing left in the current list */
+
+    /*fprintf(stderr, "Doing depth %d\n", d);*/
+
+    /* init the new list */
+    for (int i = 0; i < NODES; i++) {
+      nl[i] = -1;
+    }
+
+    /* all the current nodes are at distance d */
+    for (int i = 0; i < NODES; i++) {
+      n = cl[i];
+
+      if (n != -1) {
+	dist_r[n] = d;
+      }
+      else {
+	break;
+      }
+    }
+
+    /* now we need to find the new nodes reachable at the next depth */
+    for (int i = 0; i < NODES; i++) {
+      n = cl[i];
+
+      if (n == -1) {
+	break;
+      }
+
+      for (int j = 0; j < MAXPEERS; j++) {
+	nn = edges[n][j];
+
+	if (nn == -1) {
+	  break;
+	}
+
+	if (dist_r[nn] == -1) {
+	  add_peer(nn, &nl, NODES);
+	}
+      }
+    }
+
+    memcpy(cl, nl, sizeof(nl));
+    d++;
+  } /* end while the current list isn't empty */
+
 }
 
 
@@ -74,18 +146,25 @@ int add_edge(int32_t n, int32_t p) {
   assert(n < NODES);
   assert(p < NODES);
 
-  for (int i = 0; i < MAXPEERS; i++) {
-    if (edges[n][i] == -1) {
-      edges[n][i] = p;
+  return add_peer(p, &(edges[n]), MAXPEERS);
+}
+
+
+int add_peer(int32_t p, int32_t (*plist)[], int len) {
+
+  for (int i = 0; i < len; i++) {
+    if ((*plist)[i] == -1) {
+      (*plist)[i] = p;
       return 1;
     }
-    else if (edges[n][i] == p) {
+    else if ((*plist)[i] == p) {
       return 0;
     }
   }
 
-  fprintf(stderr, "Unable peer list for node %d exceeded %d!\n", n, MAXPEERS);
+  fprintf(stderr, "Maximum peer list exceeded %d!\n", len);
   abort();
 
   return -1; /* not reachable with above abort */
+
 }
