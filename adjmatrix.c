@@ -15,9 +15,10 @@ int32_t edges[NODES][MAXPEERS];
 void read_edges();
 int add_edge(int32_t, int32_t);
 int add_peer(int32_t, int32_t (*)[], int);
-void row_bfs(int32_t);
+void row_bfs(int32_t, int *);
 
 int main(void) {
+  int maxd;
 
   /* init the edge list */
   for (int n = 0; n < NODES; n++) {
@@ -27,20 +28,23 @@ int main(void) {
   }
 
   read_edges();
+
+  maxd = 0;
   for (int i = 0; i < NODES; i++) {
-    row_bfs(i);
+    row_bfs(i, &maxd);
   }
 
   return 0;
 }
 
 
-void row_bfs(int32_t row) {
+void row_bfs(int32_t row, int *maxd) {
   int d = 1; /* depth */
   int n; /* working node */
   int nn; /* new node */
+  int clptr; /* pointer into cl list */
   int8_t dist_r[NODES]; /* the row of distances */
-  int32_t cl[NODES], nl[NODES]; /* TODO: make a fast datastructure */
+  int32_t cl[NODES], nl[NODES];
 
   dist_r[row] = 0; /* this node is adjacent to itself (distance 0) */
 
@@ -56,6 +60,10 @@ void row_bfs(int32_t row) {
   while (cl[0] != -1) { /* until there is nothing left in the current list */
 
     /*fprintf(stderr, "Doing depth %d\n", d);*/
+    if (d > *maxd) {
+      *maxd = d;
+      fprintf(stderr, "Found new maximum depth: %d\n", d);
+    }
 
     /* init the new list */
     for (int i = 0; i < NODES; i++) {
@@ -90,12 +98,28 @@ void row_bfs(int32_t row) {
 	}
 
 	if (dist_r[nn] == -1) {
-	  add_peer(nn, &nl, NODES);
+	  /* add_peer(nn, &nl, NODES); */
+	  nl[nn] = nn;
 	}
       }
     }
 
-    memcpy(cl, nl, sizeof(nl));
+    /*memcpy(cl, nl, sizeof(nl));*/
+    clptr = 0;
+    for (int i = 0; i < NODES; i++) {
+      nn = nl[i];
+
+      if (nn == -1) {
+	continue;
+      }
+
+      cl[clptr] = nn;
+      clptr++;
+    }
+    if (clptr < NODES) {
+      cl[clptr] = -1;
+    }
+
     d++;
   } /* end while the current list isn't empty */
 
